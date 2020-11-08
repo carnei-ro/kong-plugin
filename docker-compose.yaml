@@ -19,20 +19,8 @@ services:
       timeout: 5s
       retries: 5
 
-  kong-migration:
-    image: kong:2.0.3-centos
-    command: "sleep 10; kong migrations bootstrap ; kong migrations list ; kong migrations up"
-    restart: on-failure
-    environment:
-      KONG_PG_HOST: kong-database
-      KONG_PG_PASSWORD: kong
-    links:
-      - kong-database
-    depends_on:
-      - kong-database
-
   kong:
-    image: kong:2.0.3-centos
+    image: kong:2.2.0-centos
     depends_on:
       - kong-database
     environment:

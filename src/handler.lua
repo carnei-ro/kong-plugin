@@ -41,6 +41,17 @@ function plugin:access(plugin_conf)
 end
 --]]
 
+--[[ Depends on Kong >= 2.2.x.
+-- Using it automatically enables response buffering, which allows you to manipulate
+--  both the response headers and the response body in the same phase
+function plugin:response(plugin_conf)
+  local response_body = kong.service.response.get_body()
+  local status = kong.service.response.get_status()
+  kong.response.set_header('foo', 'bar')
+  kong.response.exit(202, {['request_body'] = request_body, ['response_body'] = response_body, ['status'] = status })
+end
+]]--
+
 
 --[[ runs in the 'header_filter_by_lua_block'
 function plugin:header_filter(plugin_conf)
