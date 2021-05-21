@@ -19,7 +19,11 @@ ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
 <!-- BEGINNING OF KONG-PLUGIN DOCS HOOK -->
 ## Plugin Priority
 
-PRIORITY = 1000
+**1000**
+
+## Plugin Version
+
+**0.1.0-1**
 
 ## Configs
 

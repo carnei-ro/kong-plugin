@@ -4,6 +4,7 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 SUMMARY := $(shell sed -n '/^summary: /s/^summary: //p' README.md)
 DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose-dbless.yaml')
+# DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose.yaml')
 export UID GID NAME VERSION 
 
 build: rockspec validate
@@ -71,6 +72,9 @@ kong-reload:
 restart:
 	@docker rm -vf $$(docker ps -qf name=${NAME}_kong_1)
 	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
+
+truncate-logs:
+	@sudo truncate -s 0 $$(docker inspect --format='{{.LogPath}}' ${NAME}_kong_1)
 
 reconfigure: clean start kong-logs
 

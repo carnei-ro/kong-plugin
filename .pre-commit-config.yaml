@@ -1,0 +1,10 @@
+---
+repos:
+  - repo: local
+    hooks:
+      - id: update-readme
+        name: Update README.md file
+        description: Update README.md file.
+        entry: ./update_readme.sh "" ""
+        language: script
+        pass_filenames: false
