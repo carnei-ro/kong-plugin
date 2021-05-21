@@ -18,5 +18,6 @@ routes:
   plugins:
   - name: kong-plugin
     config:
+      my_number: 44
       my_header: X-Foo-Bar
       my_string: "hello world"

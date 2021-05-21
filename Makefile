@@ -3,6 +3,7 @@ NAME := $(shell basename $${PWD})
 UID := $(shell id -u)
 GID := $(shell id -g)
 SUMMARY := $(shell sed -n '/^summary: /s/^summary: //p' README.md)
+DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose-dbless.yaml')
 export UID GID NAME VERSION 
 
 build: rockspec validate
@@ -45,15 +46,15 @@ rockspec:
 clean: copy-docker-compose
 	@rm -rf *.rock *.rockspec dist shm src/src
 	@find src -type f -iname "*lua~" -exec rm -f {} \;
-	@docker-compose down -v
+	@docker-compose ${DOCKER_COMPOSE_FILE} down -v
 
 clear: clean
 
 start: validate copy-docker-compose
-	@docker-compose up -d
+	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
 
 stop: copy-docker-compose
-	@docker-compose down
+	@docker-compose ${DOCKER_COMPOSE_FILE} down
 
 logs: kong-logs
 kong-logs:
@@ -69,7 +70,7 @@ kong-reload:
 
 restart:
 	@docker rm -vf $$(docker ps -qf name=${NAME}_kong_1)
-	@docker-compose up -d
+	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
 
 reconfigure: clean start kong-logs
 
@@ -107,3 +108,6 @@ test: rockspec
 	@cp -f src/*.lua kong/plugins/${NAME}/
 	@KONG_VERSION=2.0.x pongo run -v -o gtest ./spec || true
 	@rm -fr spec/${NAME} kong
+
+update_readme:
+	@./update_readme.sh ${NAME}
