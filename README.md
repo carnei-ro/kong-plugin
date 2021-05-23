@@ -22,7 +22,7 @@ ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
 ## Developing
 
 - Rename the directory inside `kong/plugins` and `spec` from **my-plugin** to your desired plugin name. Be careful to not overlap with existent Kong Plugins.
-- **README.md** file must contain "**summary:** line" with a single line description of the plugin
+- **README.md** file must contain "**summary:**" with a single line description of the plugin
 - Switch between DBLess or Postgres changing the **DOCKER_COMPOSE_FILE** variable at the `Makefile`
 - If your plugin depends on external lua libraries (rocks), list them into **dependencies.conf** file
 - Pre-Commit available - Depends on Kong running.
