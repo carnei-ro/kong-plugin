@@ -1,7 +1,7 @@
 local helpers = require "spec.helpers"
 
 
-local PLUGIN_NAME = "kong-plugin"
+local PLUGIN_NAME = "my-plugin"
 
 
 for _, strategy in helpers.each_strategy() do

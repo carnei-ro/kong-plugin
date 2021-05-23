@@ -1,10 +1,13 @@
-Kong plugin template
-====================
+# Kong Plugin Template
 
 summary: Template for kong plugin
 
 This template was designed to work with the
-[`kong-pongo`](https://github.com/Kong/kong-pongo), `docker` and `docker-compose`
+[`kong-pongo`](https://github.com/Kong/kong-pongo), `docker` and `docker-compose`.
+
+`curl`, `jq`, `make` also needed.
+
+Based on https://github.com/Kong/kong-plugin
 
 Install pongo:
 
@@ -16,6 +19,24 @@ mkdir -p ~/.local/bin
 ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
 ```
 
+## Developing
+
+- Rename the directory inside `kong/plugins` and `spec` from **my-plugin** to your desired plugin name. Be careful to not overlap with existent Kong Plugins.
+- **README.md** file must contain "**summary:** line" with a single line description of the plugin
+- Switch between DBLess or Postgres changing the **DOCKER_COMPOSE_FILE** variable at the `Makefile`
+- If your plugin depends on external lua libraries (rocks), list them into **dependencies.conf** file
+- Pre-Commit available - Depends on Kong running.
+- `make help` to check available commands. Some of them:
+    - `make start` to create the rockspec file and start a Kong container to serve the base for the development
+    - `make reload` to reload Kong and the chages in plugin's code
+    - `make stop` and/or `make clean` to cleaning it up
+    - `make lint` and `make test` to run **pongo**
+    - With Kong running: `make update_readme` to recreate the section between **KONG-PLUGIN DOCS HOOK** comments
+    - `make logs` to check Kong logs
+    - `make shell` to access Kong bash
+    - `make resty-script` to execute **resty-script.lua** file. Useful to test some code
+    - `make build` to generate the **.rock** file at the _./dist_ directory
+
 <!-- BEGINNING OF KONG-PLUGIN DOCS HOOK -->
 ## Plugin Priority
 
@@ -23,7 +44,7 @@ ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
 
 ## Plugin Version
 
-**0.1.0-1**
+**0.1.0**
 
 ## Configs
 
@@ -53,7 +74,7 @@ ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
 ```yaml
 ---
 plugins:
-- name: kong-plugin
+- name: my-plugin
   enabled: true
   config:
     my_number: 42

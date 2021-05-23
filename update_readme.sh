@@ -2,7 +2,9 @@
 
 cd $(git rev-parse --show-toplevel)
 
-PLUGIN_NAME=${1:-${PWD##*/}}
+AUTO_PLUGIN_NAME=$(ls kong/plugins)
+
+PLUGIN_NAME=${1:-$AUTO_PLUGIN_NAME}
 KONG_SCHEMA_ENDPOINT=${2:-http://172.17.0.1:8001/schemas/plugins/}
 
 # PLUGIN_PRIORITY=$(grep -ER 'PRIORITY( )*?=( )*?[0-9]+' 2>&1| grep handler.lua | grep -Eo '(PRIORITY.*[0-9]+)')

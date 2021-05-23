@@ -3,5 +3,3 @@ servroot
 
 # packed distribution format for LuaRocks
 *.rock
-
-src/src

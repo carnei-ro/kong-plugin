@@ -1,29 +1,36 @@
-VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\",/\1/p;" src/handler.lua)
-NAME := $(shell basename $${PWD})
+VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\",/\1/p;"  kong/plugins/*/handler.lua)
+NAME := $(shell ls kong/plugins)
+.DEFAULT_GOAL:=help
+DIR_NAME=$(shell basename $${PWD})
 UID := $(shell id -u)
 GID := $(shell id -g)
 SUMMARY := $(shell sed -n '/^summary: /s/^summary: //p' README.md)
 DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose-dbless.yaml')
 # DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose.yaml')
-export UID GID NAME VERSION 
+export UID GID NAME VERSION
 
-build: rockspec validate
-	@find src/ -type f -iname "*lua~" -exec rm -f {} \;
+help:  ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+.PHONY: build
+build: rockspec validate ## Build / Pack the plugin. Output at the ./dist directory
+	@find kong/plugins/${NAME}/ -type f -iname "*lua~" -exec rm -f {} \;
 	@docker run --rm -u 0 -v ${PWD}:/plugin \
 		--entrypoint /bin/bash kong:2.0.3-centos \
-		-c "cd /plugin ; yum install -y zip; luarocks make > /dev/null 2>&1 ; luarocks pack ${NAME} 2> /dev/null ; chown ${UID}:${GID} *.rock"
+		-c "cd /plugin ; yum install -q -y zip; luarocks make > /dev/null 2>&1 ; luarocks pack kong-plugin-${NAME} 2> /dev/null ; chown ${UID}:${GID} *.rock"
 	@mkdir -p dist
 	@mv *.rock dist/
 	@printf '\n\n Check "dist" folder \n\n'
 
-validate:
+.PHONY: validate
+validate: ## Check plugin version, summary and create rockspec if not exists.
 	@if [ -z "$${VERSION}" ]; then \
-	  printf "\n\nNo VERSION found in handler.lua;\nPlease set it in your object that extends the base_plugin.\nEx: plugin.VERSION = \"0.1.0-1\"\n\n"; \
+	  printf "\n\nNo VERSION found in handler.lua;\nPlease set it in your object that extends the base_plugin.\nEx: plugin.VERSION = \"0.1.0\"\n\n"; \
 	  exit 1 ;\
 	else \
-	  echo ${VERSION} | egrep '(\w.+)-([0-9]+)$$' > /dev/null 2>&1 ; \
+	  echo ${VERSION} | egrep '^[0-9]\.[0-9]\.[0-9]$$' > /dev/null 2>&1 ; \
 	  if [ $${?} -ne 0 ]; then \
-  	    printf "\n\nVERSION must follow the pattern [%%w.]+-[%%d]+\nWhich means: 0.0-0 or 0.0.0-0 or ...\nReceived: $${VERSION} \n\n"; \
+  	    printf "\n\nVERSION must follow the Semantic Version pattern without additional labels for pre-releases.\nWhich means: Major.Minor.Patch, eg 0.1.0 or ...\nReceived: $${VERSION} \n\n"; \
 	    exit 2 ; \
 	  fi ; \
 	fi
@@ -32,86 +39,109 @@ validate:
 	  printf "\nExample:\nsummary: this is my summary\n\n\n" ;\
 	  exit 4 ;\
 	fi
-	@if [ ! -f ${NAME}-${VERSION}.rockspec ]; then \
+	@if [ ! -f kong-plugin-${NAME}-${VERSION}-1.rockspec ]; then \
 	  make rockspec; \
 	fi
 
-copy-docker-compose:
-	@[ ! -f docker-compose.yaml ] && cp ../docker-compose.yaml . || printf ''
+.PHONY: rockspec
+rockspec: ## Create the RockSpec file, parsing the Plugin Name, Version, Dependencies and Summary.
+	@printf 'package = "kong-plugin-%s"\nversion = "%s"\n\nsource = {\n url    = "%s",\n branch = "main"\n}\n\ndescription = {\n  summary = "%s",\n}\n\ndependencies = {\n' "${NAME}" "${VERSION}-1" "$(shell git remote -v | grep -E '^origin.*push.$$' | awk '{print $$2}')" "${SUMMARY}" > kong-plugin-${NAME}-${VERSION}-1.rockspec
+	@grep -Ev '^#|^ *$$' dependencies.conf | sed -e 's/$$/",/g' -e 's/^/\ \ "/g' >> kong-plugin-${NAME}-${VERSION}-1.rockspec
+	@printf '}\n\nbuild = {\n  type = "builtin",\n  modules = {\n' >> kong-plugin-${NAME}-${VERSION}-1.rockspec
+	@find kong/plugins/${NAME} -type f -iname "*.lua" -exec bash -c 'printf "    [\"%s\"] = \"%s\",\n" "$$(tr '/' '.' <<< $${1/\.lua})" "{}"' _ {} \;	>> kong-plugin-${NAME}-${VERSION}-1.rockspec
+	@printf "  }\n}" >> kong-plugin-${NAME}-${VERSION}-1.rockspec
 
-rockspec:
-	@printf 'package = "%s"\nversion = "%s"\n\nsource = {\n url    = "git@github.com:carnei-ro/${NAME}.git",\n branch = "master"\n}\n\ndescription = {\n  summary = "%s",\n}\n\ndependencies = {\n}\n\nbuild = {\n  type = "builtin",\n  modules = {\n' "${NAME}" "${VERSION}" "${SUMMARY}" > ${NAME}-${VERSION}.rockspec
-	@find src/ -type f -iname "*.lua" -exec bash -c 'printf "    [\"kong.plugins.%s.%s\"] = \"%s\",\n" "${NAME}" "$$(basename $${1/\.lua})" "{}"' _ {} \;	>> ${NAME}-${VERSION}.rockspec
-	@printf "  }\n}" >> ${NAME}-${VERSION}.rockspec
-
-clean: copy-docker-compose
-	@rm -rf *.rock *.rockspec dist shm src/src
-	@find src -type f -iname "*lua~" -exec rm -f {} \;
+.PHONY: clean
+clean: ## Remove artifactory files and take down docker stack.
+	@rm -rf *.rock *.rockspec dist shm kong/plugins/${NAME}/${NAME}
+	@find kong/plugin/${NAME} -type f -iname "*lua~" -exec rm -f {} \;
 	@docker-compose ${DOCKER_COMPOSE_FILE} down -v
 
-clear: clean
+.PHONY: clear
+clear: clean ## Same as clean.
 
-start: validate copy-docker-compose
+.PHONY: start
+start: validate ## Exec start the docker-compose stack.
 	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
 
-stop: copy-docker-compose
+.PHONY: stop
+stop: ## Stop the containers.
 	@docker-compose ${DOCKER_COMPOSE_FILE} down
 
-logs: kong-logs
-kong-logs:
-	@docker logs -f $$(docker ps -qf name=${NAME}_kong_1) 2>&1 || true
+.PHONY: logs
+logs: kong-logs ## Show Kong container logs.
+.PHONY: kong-logs
+kong-logs: ## Same as logs.
+	@docker logs -f $$(docker ps -qf name=${DIR_NAME}_kong_1) 2>&1 || true
 
-shell: kong-bash
-kong-bash:
-	@docker exec -it $$(docker ps -qf name=${NAME}_kong_1) bash || true
+.PHONY: shell
+shell: kong-bash ## Docker exec into Kong container shell.
+.PHONY: kong-bash
+kong-bash: ## Same as shell.
+	@docker exec -it $$(docker ps -qf name=${DIR_NAME}_kong_1) bash || true
 
-reload: kong-reload
-kong-reload:
-	@docker exec -it $$(docker ps -qf name=${NAME}_kong_1) bash -c "/usr/local/bin/kong reload"
+.PHONY: reload
+reload: kong-reload ## Perform Kong Reload into Kong container.
+.PHONY: kong-reload
+kong-reload: ## Same as reload.
+	@docker exec -it $$(docker ps -qf name=${DIR_NAME}_kong_1) bash -c "/usr/local/bin/kong reload"
 
-restart:
-	@docker rm -vf $$(docker ps -qf name=${NAME}_kong_1)
+.PHONY: restart
+restart: ## Remove Kong container and recreate it.
+	@docker rm -vf $$(docker ps -qf name=${DIR_NAME}_kong_1)
 	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
 
-truncate-logs:
-	@sudo truncate -s 0 $$(docker inspect --format='{{.LogPath}}' ${NAME}_kong_1)
+.PHONY: truncate-logs
+truncate-logs: ## Needs sudo privileges: truncate Kong Container logs.
+	@sudo truncate -s 0 $$(docker inspect --format='{{.LogPath}}' ${DIR_NAME}_kong_1)
 
-reconfigure: clean start kong-logs
+.PHONY: reconfigure
+reconfigure: clean start kong-logs ## Shortcut to clean, start, logs.
 
-config-aux:
+.PHONY: config-aux
+config-aux: ## Works only with Database: Creates 'aux.lua' file and post it as a pre-function plugin to /aux route.
 	@[ ! -f aux.lua ] && echo -e 'ngx.say("hello from aux - edit aux.lua and run make patch-aux")\nngx.exit(200)' > aux.lua || printf ''
 	@curl -s -X POST http://localhost:8001/services/ -d 'name=aux' -d url=http://localhost
 	@curl -s -X POST http://localhost:8001/services/aux/routes -d 'paths[]=/aux' -d 'name=aux'
 	@curl -i -X POST http://localhost:8001/services/aux/plugins -F "name=pre-function" -F "config.functions=@aux.lua"
 
-patch-aux:
+.PHONY: patch-aux
+patch-aux: ## Works only with Database: Updates /aux pre-function plugin.
 	@curl -i -X PATCH http://localhost:8001/plugins/$$(curl -s http://localhost:8001/plugins/ | jq -r ".data[] |  select (.name|test(\"pre-function\")) .id")      -F "name=pre-function"      -F "config.functions=@aux.lua"
 	@echo " "
 
-req-aux:
+.PHONY: req-aux
+req-aux: ## GET /aux endpoint.
 	@curl -s http://localhost:8000/aux
 
-resty-script:
-	@docker exec -it $$(docker ps -qf name=${NAME}_kong_1) /usr/local/openresty/bin/resty /plugin-development/resty-script.lua || true
+.PHONY: resty-script
+resty-script: ## Execute inside Kong Container the 'resty-script.lua' file.
+	@docker exec -it $$(docker ps -qf name=${DIR_NAME}_kong_1) /usr/local/openresty/bin/resty /plugin-development/resty-script.lua || true
 
-config:
+.PHONY: config
+config: ## Works only with Database: Create a 'httpbin' service and '/' route. Add the custom-plugin to the '/' route.
 	@curl -s -X POST http://localhost:8001/services/ -d 'name=httpbin' -d url=http://httpbin.org/anything
 	@curl -s -X POST http://localhost:8001/services/httpbin/routes -d 'paths[]=/' -d 'name=root'
 	@curl -i -X POST http://localhost:8001/routes/root/plugins -F "name=${NAME}"
 
-config-plugin-remove:
+.PHONY: config-plugin-remove
+config-plugin-remove:  ## Works only with Database: Remove the custom-plugin.
 	@curl -i -X DELETE http://localhost:8001/plugins/$$(curl -s http://localhost:8001/plugins/ | jq -r ".data[] |  select (.name|test(\"${NAME}\")) .id")
 
-remove-all:
+.PHONY: remove-all
+remove-all: ## Works only with Database: Remove all configurations for plugins, consumers, routes, services, and upstreams
 	@for i in plugins consumers routes services upstreams; do for j in $$(curl -s --url http://127.0.0.1:8001/$${i} | jq -r ".data[].id"); do curl -s -i -X DELETE --url http://127.0.0.1:8001/$${i}/$${j}; done; done
 
-test: rockspec
-	@mkdir -p spec/${NAME}
-	@cd spec ; sed 's/\(local PLUGIN_NAME\).*/\1 = "${NAME}"/g' -i *.lua; find -maxdepth 1 -type f -iname "*lua" -exec ln -sf .{} ${NAME}/{} \; ; cd ..
-	@mkdir -p kong/plugins/${NAME}
-	@cp -f src/*.lua kong/plugins/${NAME}/
+.PHONY: test
+test: rockspec ## Execute 'pongo' tests with Kong Version 2.0.x.
+	@sed 's/\(local PLUGIN_NAME\).*/\1 = "${NAME}"/g' -i spec/*/*.lua
 	@KONG_VERSION=2.0.x pongo run -v -o gtest ./spec || true
-	@rm -fr spec/${NAME} kong
 
-update_readme:
+.PHONY: lint
+lint: rockspec ## Execute 'pongo' lint
+	@sed 's/\(local PLUGIN_NAME\).*/\1 = "${NAME}"/g' -i spec/*/*.lua
+	@KONG_VERSION=2.0.x pongo lint || true
+
+.PHONY: update-readme
+update-readme: ## Depends on Kong up and running: Updates 'Plugin Priority', 'Plugin Version', 'Configs' and 'Usage' sections from README.md file.
 	@./update_readme.sh ${NAME}

@@ -4,7 +4,7 @@ local access = require("kong.plugins." .. plugin_name .. ".access") --not necess
 
 local plugin = {
   PRIORITY = 1000, -- set the plugin priority, which determines plugin execution order
-  VERSION = "0.1.0-1",
+  VERSION = "0.1.0",
 }
 
 

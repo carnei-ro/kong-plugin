@@ -1,4 +1,4 @@
-local PLUGIN_NAME = "kong-plugin"
+local PLUGIN_NAME = "my-plugin"
 
 -- helper function to validate data against a schema
 local validate do
