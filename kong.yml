@@ -15,9 +15,9 @@ routes:
   regex_priority: 1
   service: httpbin
   strip_path: false
-  plugins:
-  - name: my-plugin
-    config:
-      my_number: 44
-      my_header: X-Foo-Bar
-      my_string: "hello world"
+  # plugins:
+  # - name: my-plugin
+  #   config:
+  #     my_number: 44
+  #     my_header: X-Foo-Bar
+  #     my_string: "hello world"

@@ -13,7 +13,7 @@ local plugin = {
 function plugin:init_worker()
   -- your custom code here
   kong.log.debug("saying hi from the 'init_worker' handler")
-end 
+end
 ]]--
 
 --[[ runs in the ssl_certificate_by_lua_block handler
@@ -37,7 +37,7 @@ end
 function plugin:access(plugin_conf)
   -- executing the function "execute" in file required as "access"
   access.execute(plugin_conf)
-  
+
 end
 --]]
 
@@ -65,7 +65,7 @@ end
 function plugin:body_filter(plugin_conf)
   -- your custom code here
   kong.log.debug("saying hi from the 'body_filter' handler")
-end 
+end
 ]]--
 
 
@@ -73,7 +73,7 @@ end
 function plugin:log(plugin_conf)
   -- your custom code here
   kong.log.debug("saying hi from the 'log' handler")
-end 
+end
 ]]--
 
 

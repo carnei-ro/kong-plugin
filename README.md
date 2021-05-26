@@ -7,7 +7,7 @@ This template was designed to work with the
 
 `curl`, `jq`, `make` also needed.
 
-Based on https://github.com/Kong/kong-plugin
+Based on [kong-plugin](https://github.com/Kong/kong-plugin)
 
 Install pongo:
 
@@ -27,24 +27,24 @@ ln -s $(realpath kong-pongo/pongo.sh) ~/.local/bin/pongo
 - If your plugin depends on external lua libraries (rocks), list them into **dependencies.conf** file
 - Pre-Commit available - Depends on Kong running.
 - `make help` to check available commands. Some of them:
-    - `make start` to create the rockspec file and start a Kong container to serve the base for the development
-    - `make reload` to reload Kong and the chages in plugin's code
-    - `make stop` and/or `make clean` to cleaning it up
-    - `make lint` and `make test` to run **pongo**
-    - With Kong running: `make update_readme` to recreate the section between **KONG-PLUGIN DOCS HOOK** comments
-    - `make logs` to check Kong logs
-    - `make shell` to access Kong bash
-    - `make resty-script` to execute **resty-script.lua** file. Useful to test some code
-    - `make build` to generate the **.rock** file at the _./dist_ directory
+  - `make start` to create the rockspec file and start a Kong container to serve the base for the development
+  - `make reload` to reload Kong and the chages in plugin's code
+  - `make stop` and/or `make clean` to cleaning it up
+  - `make lint` and `make test` to run **pongo**
+  - With Kong running: `make update_readme` to recreate the section between **KONG-PLUGIN DOCS HOOK** comments
+  - `make logs` to check Kong logs
+  - `make shell` to access Kong bash
+  - `make resty-script` to execute **resty-script.lua** file. Useful to test some code
+  - `make build` to generate the **.rock** file at the _./dist_ directory
 
 <!-- BEGINNING OF KONG-PLUGIN DOCS HOOK -->
 ## Plugin Priority
 
-**1000**
+Priority: **1000**
 
 ## Plugin Version
 
-**0.1.0**
+Version: **0.1.0**
 
 ## Configs
 

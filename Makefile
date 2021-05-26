@@ -1,13 +1,20 @@
 VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\",/\1/p;"  kong/plugins/*/handler.lua)
 NAME := $(shell ls kong/plugins)
-.DEFAULT_GOAL:=help
 DIR_NAME=$(shell basename $${PWD})
 UID := $(shell id -u)
 GID := $(shell id -g)
 SUMMARY := $(shell sed -n '/^summary: /s/^summary: //p' README.md)
-DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose-dbless.yaml')
-# DOCKER_COMPOSE_FILE := $(shell echo '-f docker-compose.yaml')
 export UID GID NAME VERSION
+
+.DEFAULT_GOAL:=help
+
+ifeq ($(origin DOCKER_COMPOSE_FILE),undefined)
+DOCKER_COMPOSE_FILE := docker-compose-dbless.yaml
+endif
+
+ifeq ($(origin KONG_VERSION),undefined)
+KONG_VERSION := 2.1.2
+endif
 
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -49,24 +56,24 @@ rockspec: ## Create the RockSpec file, parsing the Plugin Name, Version, Depende
 	@grep -Ev '^#|^ *$$' dependencies.conf | sed -e 's/$$/",/g' -e 's/^/\ \ "/g' >> kong-plugin-${NAME}-${VERSION}-1.rockspec
 	@printf '}\n\nbuild = {\n  type = "builtin",\n  modules = {\n' >> kong-plugin-${NAME}-${VERSION}-1.rockspec
 	@find kong/plugins/${NAME} -type f -iname "*.lua" -exec bash -c 'printf "    [\"%s\"] = \"%s\",\n" "$$(tr '/' '.' <<< $${1/\.lua})" "{}"' _ {} \;	>> kong-plugin-${NAME}-${VERSION}-1.rockspec
-	@printf "  }\n}" >> kong-plugin-${NAME}-${VERSION}-1.rockspec
+	@printf "  }\n}\n" >> kong-plugin-${NAME}-${VERSION}-1.rockspec
 
 .PHONY: clean
 clean: ## Remove artifactory files and take down docker stack.
 	@rm -rf *.rock *.rockspec dist shm kong/plugins/${NAME}/${NAME}
 	@find kong/plugin/${NAME} -type f -iname "*lua~" -exec rm -f {} \;
-	@docker-compose ${DOCKER_COMPOSE_FILE} down -v
+	@docker-compose -f ${DOCKER_COMPOSE_FILE} down -v
 
 .PHONY: clear
 clear: clean ## Same as clean.
 
 .PHONY: start
 start: validate ## Exec start the docker-compose stack.
-	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
+	@docker-compose -f ${DOCKER_COMPOSE_FILE} up -d
 
 .PHONY: stop
 stop: ## Stop the containers.
-	@docker-compose ${DOCKER_COMPOSE_FILE} down
+	@docker-compose -f ${DOCKER_COMPOSE_FILE} down
 
 .PHONY: logs
 logs: kong-logs ## Show Kong container logs.
@@ -89,7 +96,7 @@ kong-reload: ## Same as reload.
 .PHONY: restart
 restart: ## Remove Kong container and recreate it.
 	@docker rm -vf $$(docker ps -qf name=${DIR_NAME}_kong_1)
-	@docker-compose ${DOCKER_COMPOSE_FILE} up -d
+	@docker-compose -f ${DOCKER_COMPOSE_FILE} up -d
 
 .PHONY: truncate-logs
 truncate-logs: ## Needs sudo privileges: truncate Kong Container logs.
@@ -135,12 +142,12 @@ remove-all: ## Works only with Database: Remove all configurations for plugins, 
 .PHONY: test
 test: rockspec ## Execute 'pongo' tests with Kong Version 2.0.x.
 	@sed 's/\(local PLUGIN_NAME\).*/\1 = "${NAME}"/g' -i spec/*/*.lua
-	@KONG_VERSION=2.0.x pongo run -v -o gtest ./spec || true
+	@KONG_VERSION=${KONG_VERSION} pongo run -v -o gtest ./spec
 
 .PHONY: lint
 lint: rockspec ## Execute 'pongo' lint
 	@sed 's/\(local PLUGIN_NAME\).*/\1 = "${NAME}"/g' -i spec/*/*.lua
-	@KONG_VERSION=2.0.x pongo lint || true
+	@KONG_VERSION=${KONG_VERSION} pongo lint
 
 .PHONY: update-readme
 update-readme: ## Depends on Kong up and running: Updates 'Plugin Priority', 'Plugin Version', 'Configs' and 'Usage' sections from README.md file.

@@ -49,7 +49,7 @@ services:
         ln -s /plugin-development/kong-plugin-${NAME}-${VERSION}-1.rockspec /usr/local/lib/luarocks/rocks-5.1/kong-plugin-${NAME}/${VERSION}-1/kong-plugin-${NAME}-${VERSION}-1.rockspec
         ln -s /plugin-development/kong/plugins/${NAME} /usr/local/share/lua/5.1/kong/plugins/${NAME}
         kong migrations bootstrap
-        kong migrations list 
+        kong migrations list
         kong migrations up
         /usr/local/bin/kong start --run-migrations --vv
     ports:

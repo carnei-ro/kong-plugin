@@ -15,6 +15,8 @@ end
 
 function _M.execute(conf)
   local header_value = conf.my_string and conf.my_string or "my_string was empty"
+  my_local_function({["lua"] = "table", ["can"] = {"be a dict", "be an array"} })
+
   kong.response.set_header(conf.my_header, header_value)
 end
 
