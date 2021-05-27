@@ -1,4 +1,4 @@
-VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\",/\1/p;"  kong/plugins/*/handler.lua)
+VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\"/\1/p;"  kong/plugins/*/handler.lua)
 NAME := $(shell ls kong/plugins)
 DIR_NAME=$(shell basename $${PWD})
 UID := $(shell id -u)
@@ -61,7 +61,7 @@ rockspec: ## Create the RockSpec file, parsing the Plugin Name, Version, Depende
 .PHONY: clean
 clean: ## Remove artifactory files and take down docker stack.
 	@rm -rf *.rock *.rockspec dist shm kong/plugins/${NAME}/${NAME}
-	@find kong/plugin/${NAME} -type f -iname "*lua~" -exec rm -f {} \;
+	@find kong/plugins/${NAME} -type f -iname "*lua~" -exec rm -f {} \;
 	@docker-compose -f ${DOCKER_COMPOSE_FILE} down -v
 
 .PHONY: clear
