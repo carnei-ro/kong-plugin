@@ -1,4 +1,4 @@
-VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\"/\1/p;"  kong/plugins/*/handler.lua)
+VERSION := $(shell sed -n "s/.*VERSION.*= \"\{1,\}\(.*\)\"/\1/p;"  kong/plugins/*/handler.lua | tr -d ',')
 NAME := $(shell ls kong/plugins)
 DIR_NAME=$(shell basename $${PWD})
 UID := $(shell id -u)
