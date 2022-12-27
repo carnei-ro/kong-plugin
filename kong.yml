@@ -1,0 +1,28 @@
+---
+_format_version: "3.0"
+
+_transform: true
+
+services:
+  - name: httpbin
+    url: https://httpbin.org/anything
+
+routes:
+  - name: httpbin
+    service: httpbin
+    paths:
+      - /
+    plugins:
+      - name: my-plugin
+        config:
+          my_number: 44
+          my_header: X-Foo-Bar
+          my_string: "{vault://env/kong-vault-data/baz}"
+
+plugins:
+  - name: prometheus
+    config:
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
