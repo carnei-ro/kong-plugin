@@ -9,7 +9,7 @@ export UID GID NAME VERSION
 .DEFAULT_GOAL:=help
 
 ifeq ($(origin DOCKER_COMPOSE_FILE),undefined)
-DOCKER_COMPOSE_FILE := docker-compose-dbless.yaml
+DOCKER_COMPOSE_FILE := docker-compose.yaml
 endif
 
 ifeq ($(origin KONG_VERSION),undefined)
