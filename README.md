@@ -89,8 +89,8 @@ plugins:
       my_string: ''
       my_header: X-Qux-Corge
       my_map:
-        mykey2: my_value2
         mykey1: my_value1
+        mykey2: my_value2
       my_record:
         field_n1: false
         field_n2: []

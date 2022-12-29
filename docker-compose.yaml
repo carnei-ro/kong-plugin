@@ -31,7 +31,6 @@ services:
       - "8000:8000"
       - "8001:8001"
 
-
 volumes:
   plugin-development:
     driver: local
@@ -39,3 +38,8 @@ volumes:
        type: none
        o: bind
        device: ${PWD}/
+
+networks:
+  default:
+    name: kong-plugin-development
+    driver: bridge
