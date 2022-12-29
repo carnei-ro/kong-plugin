@@ -1,6 +1,8 @@
 # Kong Plugin Template
 
-summary: Template for kong plugin
+summary: Template for kong plugin for Kong >= 3
+
+[![Test Status](https://github.com/carnei-ro/kong-plugin/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/carnei-ro/kong-plugin/actions)
 
 This template was designed to work with the
 [`kong-pongo`](https://github.com/Kong/kong-pongo), `docker` and `docker-compose`.

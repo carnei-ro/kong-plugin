@@ -1,10 +1,10 @@
 local helpers = require "spec.helpers"
-
+local ipairs = ipairs
 
 local PLUGIN_NAME = "my-plugin"
 
 
-for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
+for _, strategy in ipairs({"off", "postgres"}) do
   describe(PLUGIN_NAME .. ": (access) [#" .. strategy .. "]", function()
     local client
 
@@ -106,4 +106,4 @@ for _, strategy in helpers.all_strategies() do if strategy ~= "cassandra" then
     end)
 
   end)
-end end
+end
